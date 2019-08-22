@@ -11,7 +11,7 @@ class UsersIndexTest < ActionDispatch::IntegrationTest
     get users_path
     assert_template 'users/index'
     assert_select 'div.pagination', count: 2
-    first_page_of_users = User.paginate(page: 1)
+    first_page_of_users = User.where(activated: true).paginate(page: 1)
     first_page_of_users.each do |user|
       assert_select 'a[href=?]', user_path(user), text: user.name
       if user != @admin
@@ -27,5 +27,13 @@ class UsersIndexTest < ActionDispatch::IntegrationTest
     log_in_as(@non_admin)
     get users_path
     assert_select 'a', text: 'delete', count: 0
+  end
+
+  test "Unactivated people are not indexed" do
+    log_in_as(@admin)
+    get users_path
+    indexed_users = assigns(:users)
+    assert indexed_users.all? { |user| user.activated? }
+    assert indexed_users.none? { |user| !user.activated? }
   end
 end
